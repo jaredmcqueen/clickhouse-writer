@@ -11,19 +11,11 @@ func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 }
 
-// prometheus metrics
-// var promSenderCounter = promauto.NewCounterVec(prometheus.CounterOpts{
-// 	Name: "alpaca_receiver_sender",
-// 	Help: "messages count from senders",
-// }, []string{"type"})
-
 type NatsClient struct {
 	Conn *nats.Conn
 	Js   nats.JetStreamContext
 }
 
-// NewNatsClient returns a Connection and Encoded Connection
-// both need to defer .Close()
 func NewNatsClient(endpoint string) *NatsClient {
 	endpoint = "nats://" + endpoint
 	nc, err := nats.Connect(endpoint)
@@ -55,7 +47,7 @@ func NewNatsHandler[T any](ch chan T) nats.MsgHandler {
 	}
 }
 
-func (nc *NatsClient) AddSubscription(mh nats.MsgHandler, subjectName string, opts []nats.SubOpt) {
+func (nc *NatsClient) AddSubscriber(mh nats.MsgHandler, subjectName string, opts []nats.SubOpt) {
 	_, err := nc.Js.Subscribe(subjectName, mh, opts...)
 	if err != nil {
 		log.Fatal(err)

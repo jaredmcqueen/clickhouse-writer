@@ -47,10 +47,7 @@ func main() {
 	defer natsClient.Conn.Close()
 
 	// connect to clickhouse
-	chClient, err := client.NewClickhouseClient(*clickhouseEndpoint, clickhousePassword)
-	if err != nil {
-		log.Fatal("connecting to Clickhouse", err)
-	}
+	chClient := client.NewClickhouseClient(*clickhouseEndpoint, clickhousePassword)
 	defer func() {
 		if err := chClient.Conn.Close(); err != nil {
 			log.Fatal(err)
@@ -102,5 +99,5 @@ func Enable[T any](t T, i instrument.Instrument, chc *client.ClickhouseClient, n
 	chHandler := client.NewClickhouseWriterHandler(instrumentChan, i.TableName, i.InsertSQL)
 	chc.AddClickhouseWriterHandler(chHandler)
 	natsHandler := client.NewNatsHandler(instrumentChan)
-	nc.AddSubscription(natsHandler, i.TableName, subOpts)
+	nc.AddSubscriber(natsHandler, i.TableName, subOpts)
 }

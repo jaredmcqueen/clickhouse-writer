@@ -8,18 +8,11 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2"
 )
 
-// prometheus metrics
-// var promClickhouseCounter = promauto.NewCounterVec(prometheus.CounterOpts{
-//   //TODO: fix this
-// 	Name: "clickhouse_writer_somethine",
-// 	Help: "messages count from senders",
-// }, []string{"type"})
-
 type ClickhouseClient struct {
 	Conn clickhouse.Conn
 }
 
-func NewClickhouseClient(endpoint, password string) (*ClickhouseClient, error) {
+func NewClickhouseClient(endpoint, password string) *ClickhouseClient {
 	conn, err := clickhouse.Open(&clickhouse.Options{
 		Addr: []string{endpoint},
 		Auth: clickhouse.Auth{
@@ -29,7 +22,7 @@ func NewClickhouseClient(endpoint, password string) (*ClickhouseClient, error) {
 		},
 	})
 	if err != nil {
-		return nil, err
+		log.Fatal(err)
 	}
 
 	a, _ := conn.ServerVersion()
@@ -40,7 +33,7 @@ func NewClickhouseClient(endpoint, password string) (*ClickhouseClient, error) {
 		Conn: conn,
 	}
 
-	return chc, nil
+	return chc
 }
 
 func (c *ClickhouseClient) CreateTable(table string) error {
