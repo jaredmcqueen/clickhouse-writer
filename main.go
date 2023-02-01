@@ -27,6 +27,8 @@ func main() {
 	flag.PrintDefaults()
 	natsEndpoint := flag.String("natsEndpoint", "localhost:4222", "nats endpoint")
 	clickhouseEndpoint := flag.String("clickhouseEndpoint", "localhost:9000", "Clickhouse endpoint")
+	clickhouseDatabase := flag.String("clickhouseDatabase", "default", "Clickhouse database")
+	clickhouseUsername := flag.String("clickhouseUsername", "default", "Clickhouse username")
 	enableTrades := flag.Bool("trades", true, "enable trades")
 	enableBars := flag.Bool("bars", true, "enable bars")
 	enableQuotes := flag.Bool("quotes", true, "enable quotes")
@@ -47,7 +49,7 @@ func main() {
 	defer natsClient.Conn.Close()
 
 	// connect to clickhouse
-	chClient := client.NewClickhouseClient(*clickhouseEndpoint, clickhousePassword)
+	chClient := client.NewClickhouseClient(*clickhouseEndpoint, *clickhouseDatabase, *clickhouseUsername, clickhousePassword)
 	defer func() {
 		if err := chClient.Conn.Close(); err != nil {
 			log.Fatal(err)
@@ -78,7 +80,7 @@ func main() {
 func Enable[T any](t T, i instrument.Instrument, chc *client.ClickhouseClient, nc *client.NatsClient, st string) {
 	instrumentChan := make(chan T)
 	if err := chc.CreateTable(i.CreateSQL); err != nil {
-		log.Fatal(err)
+		log.Fatal(err, i.CreateSQL)
 	}
 
 	subOpts := []nats.SubOpt{}

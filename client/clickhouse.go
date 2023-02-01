@@ -12,12 +12,12 @@ type ClickhouseClient struct {
 	Conn clickhouse.Conn
 }
 
-func NewClickhouseClient(endpoint, password string) *ClickhouseClient {
+func NewClickhouseClient(endpoint, database, username, password string) *ClickhouseClient {
 	conn, err := clickhouse.Open(&clickhouse.Options{
 		Addr: []string{endpoint},
 		Auth: clickhouse.Auth{
-			Database: "default",
-			Username: "default",
+			Database: database,
+			Username: username,
 			Password: password,
 		},
 	})
