@@ -76,12 +76,9 @@ func main() {
 
 func Enable[T any](t T, i instrument.Instrument, chc *client.ClickhouseClient, nc *client.NatsClient) {
 	instrumentChan := make(chan T)
-	if err := chc.CreateTable(i.CreateSQL); err != nil {
-		log.Fatal(err, i.CreateSQL)
-	}
-
+	chc.CreateTable(i.CreateSQL, i.TableName)
 	chHandler := client.NewClickhouseWriterHandler(instrumentChan, i.TableName, i.InsertSQL)
 	chc.AddClickhouseWriterHandler(chHandler)
 	natsHandler := client.NewNatsHandler(instrumentChan)
-	nc.AddSubscriber(natsHandler, i.TableName)
+	nc.AddSubscriber(natsHandler, "ALPACA."+i.TableName)
 }

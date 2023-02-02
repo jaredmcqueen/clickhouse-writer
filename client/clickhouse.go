@@ -36,11 +36,11 @@ func NewClickhouseClient(endpoint, database, username, password string) *Clickho
 	return chc
 }
 
-func (c *ClickhouseClient) CreateTable(table string) error {
-	if err := c.Conn.Exec(context.Background(), table); err != nil {
-		return err
+func (c *ClickhouseClient) CreateTable(tableSQL, tableName string) {
+	if err := c.Conn.Exec(context.Background(), tableSQL); err != nil {
+		log.Fatal(err)
 	}
-	return nil
+	log.Println("created table", tableName)
 }
 
 type chWriterHandler func(context.Context, *ClickhouseClient)
@@ -67,6 +67,7 @@ func NewClickhouseWriterHandler[T any](ch chan T, tableName, tableInsert string)
 
 		batchTicker := time.NewTicker(1 * time.Second)
 
+		// BUG there is a race condition here
 		for {
 			select {
 			case <-batchTicker.C:
@@ -90,13 +91,4 @@ func NewClickhouseWriterHandler[T any](ch chan T, tableName, tableInsert string)
 func (c *ClickhouseClient) AddClickhouseWriterHandler(handler chWriterHandler) {
 	ctx := context.Background()
 	go handler(ctx, c)
-}
-
-func (nc *ClickhouseClient) GetLatestTimeStamp(tableName string) time.Time {
-	row := nc.Conn.QueryRow(context.Background(), "SELECT max(Timestamp) FROM trades")
-	var lastInsert time.Time
-	if err := row.Scan(&lastInsert); err != nil {
-		log.Fatal(err)
-	}
-	return lastInsert
 }

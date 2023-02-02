@@ -52,4 +52,5 @@ func (nc *NatsClient) AddSubscriber(mh nats.MsgHandler, subjectName string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Println("subscribing to nats stream", subjectName)
 }
