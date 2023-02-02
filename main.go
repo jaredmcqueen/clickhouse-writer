@@ -6,11 +6,9 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"time"
 
 	"github.com/jaredmcqueen/clickhouse-writer/client"
 	"github.com/jaredmcqueen/clickhouse-writer/instrument"
-	"github.com/nats-io/nats.go"
 )
 
 func init() {
@@ -33,7 +31,6 @@ func main() {
 	enableBars := flag.Bool("bars", true, "enable bars")
 	enableQuotes := flag.Bool("quotes", true, "enable quotes")
 	enableStatuses := flag.Bool("statuses", true, "enable trading statuses")
-	startTime := flag.String("startTime", "earliest", "now, last, earliest")
 	flag.Parse()
 
 	clickhousePassword := os.Getenv("CLICKHOUSE_PASSWORD")
@@ -57,19 +54,19 @@ func main() {
 	}()
 
 	if *enableTrades {
-		Enable(instrument.Trade{}, instrument.ITrade, chClient, natsClient, *startTime)
+		Enable(instrument.Trade{}, instrument.ITrade, chClient, natsClient)
 	}
 
 	if *enableQuotes {
-		Enable(instrument.Quote{}, instrument.IQuote, chClient, natsClient, *startTime)
+		Enable(instrument.Quote{}, instrument.IQuote, chClient, natsClient)
 	}
 	//
 	if *enableBars {
-		Enable(instrument.Bar{}, instrument.IBar, chClient, natsClient, *startTime)
+		Enable(instrument.Bar{}, instrument.IBar, chClient, natsClient)
 	}
 
 	if *enableStatuses {
-		Enable(instrument.Status{}, instrument.IStatus, chClient, natsClient, *startTime)
+		Enable(instrument.Status{}, instrument.IStatus, chClient, natsClient)
 	}
 
 	<-signalChan
@@ -77,29 +74,14 @@ func main() {
 	os.Exit(0)
 }
 
-func Enable[T any](t T, i instrument.Instrument, chc *client.ClickhouseClient, nc *client.NatsClient, st string) {
+func Enable[T any](t T, i instrument.Instrument, chc *client.ClickhouseClient, nc *client.NatsClient) {
 	instrumentChan := make(chan T)
 	if err := chc.CreateTable(i.CreateSQL); err != nil {
 		log.Fatal(err, i.CreateSQL)
 	}
 
-	subOpts := []nats.SubOpt{}
-
-	switch st {
-	case "last":
-		t := chc.GetLatestTimeStamp(i.TableName)
-		log.Println("subscribing to nats subject", i.TableName, "starting at", t)
-		subOpts = append(subOpts, nats.StartTime(t))
-	case "now":
-		t := time.Now()
-		log.Println("subscribing to nats subject", i.TableName, "starting at", t)
-		subOpts = append(subOpts, nats.StartTime(t))
-	default:
-		log.Println("subscribing to nats subject", i.TableName, "starting at earliest record")
-	}
-
 	chHandler := client.NewClickhouseWriterHandler(instrumentChan, i.TableName, i.InsertSQL)
 	chc.AddClickhouseWriterHandler(chHandler)
 	natsHandler := client.NewNatsHandler(instrumentChan)
-	nc.AddSubscriber(natsHandler, i.TableName, subOpts)
+	nc.AddSubscriber(natsHandler, i.TableName)
 }

@@ -47,8 +47,8 @@ func NewNatsHandler[T any](ch chan T) nats.MsgHandler {
 	}
 }
 
-func (nc *NatsClient) AddSubscriber(mh nats.MsgHandler, subjectName string, opts []nats.SubOpt) {
-	_, err := nc.Js.Subscribe(subjectName, mh, opts...)
+func (nc *NatsClient) AddSubscriber(mh nats.MsgHandler, subjectName string) {
+	_, err := nc.Js.Subscribe(subjectName, mh)
 	if err != nil {
 		log.Fatal(err)
 	}
