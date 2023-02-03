@@ -55,7 +55,7 @@ func NewClickhouseWriterHandler[T any](ch chan T, tableName, tableInsert string)
 		counter := 0
 		sendFunc := func() {
 			if r := batch.Send(); r != nil {
-				log.Fatal(err)
+				log.Fatal(r)
 			}
 			batch, err = c.Conn.PrepareBatch(ctx, tableInsert)
 			if err != nil {
