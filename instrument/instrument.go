@@ -69,7 +69,7 @@ var ITrade Instrument = Instrument{
 			, Conditions Array(String)
 			, Tape String
 		) Engine = MergeTree()
-    ORDER BY (Symbol, Timestamp)
+    ORDER BY Symbol
   `,
 	InsertSQL: "INSERT INTO trades",
 }
@@ -89,7 +89,7 @@ var IQuote Instrument = Instrument{
     , Conditions  Array(String)
     , Tape        String
 		) Engine = MergeTree()
-    ORDER BY (Symbol, Timestamp)
+    ORDER BY Symbol
   `,
 	InsertSQL: "INSERT INTO quotes",
 }
@@ -108,7 +108,7 @@ var IBar Instrument = Instrument{
     , TradeCount UInt64
     , VWAP       Float64
 		) Engine = MergeTree()
-    ORDER BY (Symbol, Timestamp)
+    ORDER BY Symbol
   `,
 	InsertSQL: "INSERT INTO bars",
 }
@@ -125,7 +125,7 @@ var IStatus Instrument = Instrument{
 		, Timestamp  DateTime64(3, 'US/Eastern')
     , Tape       String
 		) Engine = MergeTree()
-    ORDER BY (Symbol, Timestamp)
+    ORDER BY Symbol
   `,
 	InsertSQL: "INSERT INTO statuses",
 }
