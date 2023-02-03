@@ -49,7 +49,7 @@ func NewNatsHandler[T any](ch chan T) nats.MsgHandler {
 
 func (nc *NatsClient) AddSubscriber(mh nats.MsgHandler, subjectName string) {
 	log.Println("attempting to subscribe to", subjectName)
-	_, err := nc.Conn.Subscribe(subjectName, mh)
+	_, err := nc.Js.Subscribe(subjectName, mh)
 	if err != nil {
 		log.Fatal(err)
 	}
