@@ -45,7 +45,7 @@ func (c *ClickhouseClient) CreateTable(tableSQL, tableName string) {
 
 type chWriterHandler func(context.Context, *ClickhouseClient)
 
-func NewClickhouseWriterHandler[T any](ch chan T, tableName, tableInsert string) chWriterHandler {
+func NewClickhouseWriterHandler[T any](ch chan T, tableName, tableInsert string, batchSize int, batchDuration int) chWriterHandler {
 	return func(ctx context.Context, c *ClickhouseClient) {
 		batch, err := c.Conn.PrepareBatch(ctx, tableInsert)
 		if err != nil {
@@ -53,6 +53,8 @@ func NewClickhouseWriterHandler[T any](ch chan T, tableName, tableInsert string)
 		}
 
 		counter := 0
+		batchTicker := time.NewTicker(time.Duration(batchDuration) * time.Millisecond)
+
 		sendFunc := func() {
 			if r := batch.Send(); r != nil {
 				log.Fatal(r)
@@ -63,9 +65,8 @@ func NewClickhouseWriterHandler[T any](ch chan T, tableName, tableInsert string)
 			}
 			log.Println("sent batch of", counter, tableName)
 			counter = 0
+			batchTicker.Reset(time.Duration(batchDuration) * time.Millisecond)
 		}
-
-		batchTicker := time.NewTicker(1 * time.Second)
 
 		// BUG there is a race condition here
 		for {
@@ -80,7 +81,7 @@ func NewClickhouseWriterHandler[T any](ch chan T, tableName, tableInsert string)
 				if err := batch.AppendStruct(&data); err != nil {
 					log.Fatal(err)
 				}
-				if counter >= 25_000 {
+				if counter >= batchSize {
 					sendFunc()
 				}
 			}
