@@ -71,7 +71,8 @@ var ITrade Instrument = Instrument{
 		) Engine = MergeTree()
     ORDER BY Symbol
   `,
-	InsertSQL: "INSERT INTO trades SETTINGS async_insert=1, wait_for_async_insert=0",
+	// InsertSQL: "INSERT INTO trades SETTINGS async_insert=1, wait_for_async_insert=0",
+	InsertSQL: "INSERT INTO trades SETTINGS",
 }
 
 var IQuote Instrument = Instrument{
@@ -91,7 +92,8 @@ var IQuote Instrument = Instrument{
 		) Engine = MergeTree()
     ORDER BY Symbol
   `,
-	InsertSQL: "INSERT INTO quotes SETTINGS async_insert=1, wait_for_async_insert=0",
+	// InsertSQL: "INSERT INTO quotes SETTINGS async_insert=1, wait_for_async_insert=0",
+	InsertSQL: "INSERT INTO quotes SETTINGS",
 }
 
 var IBar Instrument = Instrument{
@@ -110,7 +112,8 @@ var IBar Instrument = Instrument{
 		) Engine = MergeTree()
     ORDER BY Symbol
   `,
-	InsertSQL: "INSERT INTO bars SETTINGS async_insert=1, wait_for_async_insert=0",
+	// InsertSQL: "INSERT INTO bars SETTINGS async_insert=1, wait_for_async_insert=0",
+	InsertSQL: "INSERT INTO bars SETTINGS",
 }
 
 var IStatus Instrument = Instrument{
@@ -127,5 +130,5 @@ var IStatus Instrument = Instrument{
 		) Engine = MergeTree()
     ORDER BY Symbol
   `,
-	InsertSQL: "INSERT INTO statuses SETTINGS async_insert=1, wait_for_async_insert=0",
+	InsertSQL: "INSERT INTO statuses SETTINGS",
 }
