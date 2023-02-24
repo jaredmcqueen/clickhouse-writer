@@ -45,7 +45,7 @@ func (c *ClickhouseClient) CreateTable(tableSQL, tableName string) {
 
 type chWriterHandler func(context.Context, *ClickhouseClient)
 
-func NewClickhouseWriterHandler[T any](ch chan T, tableName, tableInsert string) chWriterHandler {
+func NewClickhouseWriterHandler[T any](ch chan T, tableName, tableInsert string, batchSize int, batchDuration int) chWriterHandler {
 	return func(ctx context.Context, c *ClickhouseClient) {
 		batch, err := c.Conn.PrepareBatch(ctx, tableInsert)
 		if err != nil {
@@ -53,34 +53,43 @@ func NewClickhouseWriterHandler[T any](ch chan T, tableName, tableInsert string)
 		}
 
 		counter := 0
+		timeout := time.Duration(batchDuration)
+		timer := time.NewTimer(timeout)
+
 		sendFunc := func() {
 			if r := batch.Send(); r != nil {
-				log.Fatal(r)
+				// FIXME bad logging
+				log.Println(batch)
+				log.Fatal("error sending batch to clickhouse", err)
 			}
+			log.Println("sent batch of", counter, tableName)
+
+			// get ready for the next batch
 			batch, err = c.Conn.PrepareBatch(ctx, tableInsert)
 			if err != nil {
 				log.Fatal(err)
 			}
-			log.Println("sent batch of", counter, tableName)
 			counter = 0
+			timer.Reset(timeout)
 		}
 
-		batchTicker := time.NewTicker(1 * time.Second)
-
-		// BUG there is a race condition here
 		for {
 			select {
-			case <-batchTicker.C:
-				if counter == 0 {
-					continue
+			case <-timer.C:
+				if counter > 0 {
+					sendFunc()
 				}
-				sendFunc()
 			case data := <-ch:
 				counter++
 				if err := batch.AppendStruct(&data); err != nil {
-					log.Fatal(err)
+					// FIXME: better logging
+					log.Fatal("appending struct", &data, err)
 				}
-				if counter >= 25_000 {
+
+				if counter >= batchSize {
+					if !timer.Stop() {
+						<-timer.C
+					}
 					sendFunc()
 				}
 			}

@@ -31,6 +31,8 @@ func main() {
 	enableBars := flag.Bool("bars", true, "enable bars")
 	enableQuotes := flag.Bool("quotes", true, "enable quotes")
 	enableStatuses := flag.Bool("statuses", true, "enable trading statuses")
+	batchSize := flag.Int("batchSize", 2500, "batch size for clickhouse writer")
+	batchDuration := flag.Int("batchDuration", 250, "batch duration for clickhouse writer in milliseconds")
 	flag.Parse()
 
 	clickhousePassword := os.Getenv("CLICKHOUSE_PASSWORD")
@@ -54,19 +56,19 @@ func main() {
 	}()
 
 	if *enableTrades {
-		Enable(instrument.Trade{}, instrument.ITrade, chClient, natsClient)
+		Enable(instrument.Trade{}, instrument.ITrade, chClient, natsClient, *batchSize, *batchDuration)
 	}
 
 	if *enableQuotes {
-		Enable(instrument.Quote{}, instrument.IQuote, chClient, natsClient)
+		Enable(instrument.Quote{}, instrument.IQuote, chClient, natsClient, *batchSize, *batchDuration)
 	}
 	//
 	if *enableBars {
-		Enable(instrument.Bar{}, instrument.IBar, chClient, natsClient)
+		Enable(instrument.Bar{}, instrument.IBar, chClient, natsClient, *batchSize, *batchDuration)
 	}
 
 	if *enableStatuses {
-		Enable(instrument.Status{}, instrument.IStatus, chClient, natsClient)
+		Enable(instrument.Status{}, instrument.IStatus, chClient, natsClient, *batchSize, *batchDuration)
 	}
 
 	<-signalChan
@@ -74,10 +76,10 @@ func main() {
 	os.Exit(0)
 }
 
-func Enable[T any](t T, i instrument.Instrument, chc *client.ClickhouseClient, nc *client.NatsClient) {
+func Enable[T any](t T, i instrument.Instrument, chc *client.ClickhouseClient, nc *client.NatsClient, bs, bd int) {
 	instrumentChan := make(chan T)
 	chc.CreateTable(i.CreateSQL, i.TableName)
-	chHandler := client.NewClickhouseWriterHandler(instrumentChan, i.TableName, i.InsertSQL)
+	chHandler := client.NewClickhouseWriterHandler(instrumentChan, i.TableName, i.InsertSQL, bs, bd)
 	chc.AddClickhouseWriterHandler(chHandler)
 	natsHandler := client.NewNatsHandler(instrumentChan)
 	nc.AddSubscriber(natsHandler, "ALPACA."+i.TableName)
